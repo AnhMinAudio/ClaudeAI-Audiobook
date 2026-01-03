@@ -1,0 +1,51 @@
+# AnhMin Audio - Claude AI Project Manager
+# Requirements for Python 3.9+
+
+# GUI Framework
+PyQt6>=6.6.0
+PyQt6-Qt6>=6.6.0
+
+# Anthropic Claude API
+anthropic>=0.40.0
+
+# Document handling
+python-docx>=1.1.0
+docx2txt>=0.8
+
+# Database
+# SQLite3 is built-in Python
+
+# Utilities
+keyring>=25.0.0  # Secure API key storage
+packaging>=23.0  # Version comparison for auto-update
+gdown>=4.7.1  # Google Drive download for auto-update
+
+# Web scraping (Link to Text)
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# ============================================
+# Video to Text - WINDOWS (NVIDIA GPU)
+# ============================================
+# pip install faster-whisper yt-dlp
+# pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# ============================================
+# Video to Text - macOS (Apple Silicon M1/M2/M3)
+# ============================================
+# pip install mlx-whisper yt-dlp
+
+# ============================================
+# Video to Text - macOS (Intel) / Linux
+# ============================================
+# pip install faster-whisper yt-dlp
+# (Chạy trên CPU, chậm hơn GPU)
+
+# ============================================
+# FFmpeg (bắt buộc cho Video to Text)
+# ============================================
+# Windows: winget install ffmpeg
+# macOS: brew install ffmpeg
+# Linux: sudo apt install ffmpeg

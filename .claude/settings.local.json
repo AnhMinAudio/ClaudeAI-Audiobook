@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python main.py:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(iconv:*)",
+      "Bash(cat:*)",
+      "Bash(python test_undetected.py:*)",
+      "Bash(pip install:*)",
+      "Bash(chcp:*)",
+      "Bash(set:*)",
+      "Bash(python -c:*)",
+      "Bash(ls:*)",
+      "Bash(.venv\\\\Scripts\\\\python.exe:*)",
+      "Bash(findstr:*)",
+      "Bash(grep:*)",
+      "Bash(python build.py:*)",
+      "Bash(dir:*)",
+      "Bash(start AnhMinAudio.exe)",
+      "Bash(powershell -Command \"''{0:N2} MB'' -f \\(\\(Get-ChildItem -Path dist/AnhMinAudio -Recurse | Measure-Object -Property Length -Sum\\).Sum / 1MB\\)\")",
+      "Bash(.venvScriptspip list)",
+      "Bash(where /r \"%USERPROFILE%\" silero_vad*.onnx)",
+      "Bash(if exist build rmdir /s /q build)",
+      "Bash(if exist dist rmdir /s /q dist)",
+      "Bash(if exist AnhMinAudio.spec del /q AnhMinAudio.spec)",
+      "Bash(powershell -Command:*)",
+      "Bash(.venvScriptspython.exe main.py)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(\".venv/Scripts/pip.exe\" show pillow)",
+      "Bash(\".venv/Scripts/pip.exe\" install Pillow)",
+      "Bash(start distAnhMinAudioAnhMinAudio.exe)",
+      "Bash(.venv/Scripts/pip.exe install:*)",
+      "Bash(del:*)",
+      "Bash(.venv/Scripts/pip:*)",
+      "Bash(.venvScriptspython.exe test_updater.py)",
+      "Bash(timeout:*)",
+      "Bash(.venvScriptspython.exe -c \"import time; print\\(''Waiting 45 seconds...''\\); time.sleep\\(45\\); print\\(''Done waiting''\\)\")",
+      "Bash(start \"AnhMinAudio\" \"dist\\\\AnhMinAudio\\\\AnhMinAudio.exe\")",
+      "Bash(.venv/Scripts/pip.exe:*)"
+    ]
+  }
+}

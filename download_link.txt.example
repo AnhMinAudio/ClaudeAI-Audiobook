@@ -1,0 +1,16 @@
+https://drive.google.com/uc?export=download&id=YOUR_FILE_ID_HERE&confirm=t
+
+# Hướng dẫn:
+# 1. Upload file .zip lên Google Drive
+# 2. Share file với "Anyone with the link"
+# 3. Copy link, lấy FILE_ID (phần giữa /d/ và /view)
+# 4. Thay YOUR_FILE_ID_HERE bằng FILE_ID thật
+# 5. Đổi tên file này thành download_link.txt (bỏ .example)
+# 6. Upload lên GitHub Release Assets
+#
+# ⚠️ QUAN TRỌNG: Phải có &confirm=t ở cuối để tải file lớn!
+#
+# Ví dụ:
+# Link gốc: https://drive.google.com/file/d/1A2b3C4d5E6f7G8h9I0j/view?usp=sharing
+# FILE_ID: 1A2b3C4d5E6f7G8h9I0j
+# Direct link: https://drive.google.com/uc?export=download&id=1A2b3C4d5E6f7G8h9I0j&confirm=t
