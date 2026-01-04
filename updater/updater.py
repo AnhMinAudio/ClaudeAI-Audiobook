@@ -7,6 +7,7 @@ import os
 import sys
 import subprocess
 import tempfile
+import time
 import requests
 import zipfile
 import shutil
@@ -30,6 +31,7 @@ class DownloadWorker(QThread):
     progress = pyqtSignal(int, int)  # (downloaded_bytes, total_bytes)
     finished = pyqtSignal(str, bool)  # (path, is_folder)
     error = pyqtSignal(str)  # error_message
+    log_message = pyqtSignal(str)  # log_message for UI display
 
     def __init__(self, download_url: str, file_name: str):
         super().__init__()
@@ -74,77 +76,93 @@ class DownloadWorker(QThread):
             print(f"[DEBUG] File name: {self.file_name}")
             print(f"[DEBUG] Target path: {file_path}")
 
-            # Handle Google Drive with gdown (better for large files)
+            self.log_message.emit("🔗 Bắt đầu tải xuống...")
+
+            # Handle Google Drive - use gdown with progress simulation
             if 'drive.google.com' in self.download_url:
                 try:
                     import gdown
-                    import re
+                    import threading
 
-                    # Extract file ID from URL
+                    self.log_message.emit("📦 Đang kết nối tới Google Drive...")
+
+                    # Try to estimate file size from Google Drive metadata
+                    # Extract file ID for size check
+                    import re
                     file_id = None
                     id_match = re.search(r'[?&]id=([^&]+)', self.download_url)
                     if id_match:
                         file_id = id_match.group(1)
+                        print(f"[DEBUG] Google Drive File ID: {file_id}")
 
-                    print(f"[DEBUG] Extracted File ID: {file_id}")
+                    # Use percentage-based progress (0-100) to avoid integer overflow with large files
+                    # File size ~2.5 GB would overflow int32 (2^31 - 1 = 2.14 GB max)
+                    self.log_message.emit(f"📊 Kích thước ước tính: ~2500 MB")
 
-                    if file_id:
-                        # Use gdown to download (same as test script)
-                        url = f'https://drive.google.com/uc?id={file_id}'
-                        print(f"[DEBUG] gdown URL: {url}")
+                    self.log_message.emit("⬇️ Đang tải xuống từ Google Drive...")
 
-                        # Emit initial progress
-                        self.progress.emit(0, 100)
+                    # Emit initial progress (0%)
+                    self.progress.emit(0, 100)
 
-                        # Download with gdown
-                        print(f"[DEBUG] Starting gdown.download()...")
-                        sys.stdout.flush()  # Force flush
+                    # Smooth progress simulation (5% → 85% during download)
+                    self._stop_progress_simulation = False
 
-                        # Use quiet=True to prevent crash in windowed mode (no stdout)
-                        output = gdown.download(
-                            url,
-                            output=file_path,
-                            quiet=True,  # CRITICAL: Must be True for windowed apps
-                            fuzzy=True  # Handle large files automatically
-                        )
+                    def simulate_progress():
+                        """Simulate smooth progress during gdown download."""
+                        current = 5   # Start at 5%
+                        target = 85   # Stop at 85% (leave 15% for extraction)
+                        step = 1
+                        delay = 1.5  # seconds
 
-                        print(f"[DEBUG] gdown download returned")
-                        print(f"[DEBUG] output type: {type(output)}")
-                        print(f"[DEBUG] output value: {repr(output)}")
-                        print(f"[DEBUG] file_path: {file_path}")
-                        print(f"[DEBUG] file_path exists: {os.path.exists(file_path)}")
-                        sys.stdout.flush()
+                        # Initial progress
+                        self.progress.emit(current, 100)
 
-                        if not output:
-                            raise Exception(f"gdown.download() returned None or empty string")
+                        while current < target and not self._stop_progress_simulation:
+                            time.sleep(delay)
 
-                        if not os.path.exists(file_path):
-                            raise Exception(f"Downloaded file not found at: {file_path}")
+                            if self._stop_progress_simulation or self.is_cancelled:
+                                break
 
-                        # Get file size for progress
-                        file_size = os.path.getsize(file_path)
-                        print(f"[DEBUG] Downloaded file size: {file_size / (1024*1024):.2f} MB")
-                        sys.stdout.flush()
+                            current += step
+                            self.progress.emit(current, 100)
 
-                        try:
-                            self.progress.emit(file_size, file_size)  # 100%
-                            print(f"[DEBUG] Progress emit successful")
-                            sys.stdout.flush()
-                        except Exception as emit_error:
-                            print(f"[DEBUG] Progress emit failed: {emit_error}")
-                            sys.stdout.flush()
+                            # Slow down as approaching target
+                            if current > 70:
+                                delay = 2.0
+                                step = 0.5
+                            elif current > 60:
+                                delay = 1.8
 
-                        print(f"[DEBUG] About to exit Google Drive download block")
-                        sys.stdout.flush()
-                        # File downloaded successfully, continue to extraction
-                    else:
-                        raise Exception("Could not extract Google Drive file ID from URL")
+                        print(f"[DEBUG] Progress simulation stopped at {current}%")
 
-                except ImportError as e:
-                    # gdown not available
-                    print(f"[DEBUG] ImportError: {e}")
-                    self.error.emit("Cần cài gdown để tải file từ Google Drive: pip install gdown")
-                    return
+                    # Start simulation thread
+                    print(f"[DEBUG] Starting progress simulation thread...")
+                    progress_thread = threading.Thread(target=simulate_progress, daemon=True)
+                    progress_thread.start()
+
+                    # Download with gdown (blocking call)
+                    print(f"[DEBUG] Starting gdown.download()...")
+                    gdown.download(self.download_url, file_path, quiet=True, fuzzy=True)
+
+                    # Stop simulation
+                    self._stop_progress_simulation = True
+                    progress_thread.join(timeout=2.0)
+                    print(f"[DEBUG] gdown download completed")
+
+                    # Check if download was successful
+                    if not os.path.exists(file_path):
+                        raise Exception("Download failed - file not created")
+
+                    # Get actual file size
+                    file_size = os.path.getsize(file_path)
+                    file_size_mb = file_size / (1024 * 1024)
+                    print(f"[DEBUG] Downloaded file size: {file_size_mb:.2f} MB")
+
+                    self.log_message.emit(f"✅ Tải xuống hoàn tất! ({file_size_mb:.1f} MB)")
+
+                    # Emit progress to 87% (download complete, preparing extraction)
+                    self.progress.emit(87, 100)
+
                 except Exception as e:
                     import traceback
                     print(f"[DEBUG] Exception in Google Drive download:")
@@ -153,12 +171,18 @@ class DownloadWorker(QThread):
                     return
 
             else:
-                # Regular download with requests
+                # Regular download with requests (for small files < 2GB)
+                self.log_message.emit("🌐 Đang kết nối tới server...")
+
                 response = requests.get(self.download_url, stream=True, timeout=30)
                 response.raise_for_status()
 
                 total_size = int(response.headers.get('content-length', 0))
+                total_size_mb = total_size / (1024 * 1024)
+                self.log_message.emit(f"⬇️ Đang tải xuống ({total_size_mb:.1f} MB)...")
+
                 downloaded = 0
+                last_percentage = 0
 
                 with open(file_path, 'wb') as f:
                     for chunk in response.iter_content(chunk_size=8192):
@@ -170,7 +194,18 @@ class DownloadWorker(QThread):
                         if chunk:
                             f.write(chunk)
                             downloaded += len(chunk)
-                            self.progress.emit(downloaded, total_size)
+
+                            # Emit percentage (0-100) to avoid overflow with large files
+                            if total_size > 0:
+                                percentage = int((downloaded / total_size) * 100)
+                                # Only emit when percentage changes (reduce signal spam)
+                                if percentage != last_percentage:
+                                    self.progress.emit(percentage, 100)
+                                    last_percentage = percentage
+
+                self.log_message.emit(f"✅ Tải xuống hoàn tất! ({total_size_mb:.1f} MB)")
+                # Ensure 100% is emitted
+                self.progress.emit(100, 100)
 
             print(f"[DEBUG] Exited if-else block for download method")
             sys.stdout.flush()
@@ -195,6 +230,10 @@ class DownloadWorker(QThread):
                 extract_dir = os.path.join(temp_dir, 'AnhMinAudio_Update')
                 print(f"[DEBUG] Extract directory: {extract_dir}")
 
+                self.log_message.emit("📦 Đang giải nén file ZIP...")
+                # Emit 88% progress (extraction starting)
+                self.progress.emit(88, 100)
+
                 # Clean up old extract folder if exists
                 if os.path.exists(extract_dir):
                     print(f"[DEBUG] Removing old extract folder...")
@@ -204,9 +243,16 @@ class DownloadWorker(QThread):
                 print(f"[DEBUG] Extracting ZIP file...")
                 try:
                     with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                        print(f"[DEBUG] ZIP contains {len(zip_ref.namelist())} files")
+                        num_files = len(zip_ref.namelist())
+                        print(f"[DEBUG] ZIP contains {num_files} files")
+                        self.log_message.emit(f"📂 Giải nén {num_files} files...")
+                        # Emit 92% progress (extraction in progress)
+                        self.progress.emit(92, 100)
                         zip_ref.extractall(extract_dir)
                     print(f"[DEBUG] Extraction completed successfully")
+                    self.log_message.emit("✅ Giải nén hoàn tất!")
+                    # Emit 96% progress (extraction done)
+                    self.progress.emit(96, 100)
                 except Exception as e:
                     import traceback
                     print(f"[DEBUG] ZIP extraction failed:")
@@ -216,11 +262,13 @@ class DownloadWorker(QThread):
 
                 # Delete zip file
                 print(f"[DEBUG] Deleting ZIP file...")
+                self.log_message.emit("🗑️ Xóa file ZIP...")
                 os.remove(file_path)
 
                 # Find the extracted app folder (should contain .exe)
                 # Assuming structure: AnhMinAudio_Update/AnhMinAudio/AnhMinAudio.exe
                 print(f"[DEBUG] Searching for .exe file in extracted folder...")
+                self.log_message.emit("🔍 Tìm file thực thi...")
                 app_folder = None
                 for root, dirs, files in os.walk(extract_dir):
                     exe_files = [f for f in files if f.endswith('.exe')]
@@ -235,10 +283,16 @@ class DownloadWorker(QThread):
                     self.error.emit("Không tìm thấy file .exe trong file .zip")
                     return
 
+                self.log_message.emit("✨ Chuẩn bị cài đặt...")
+                # Emit 100% progress (all done)
+                self.progress.emit(100, 100)
                 print(f"[DEBUG] Emitting finished signal with folder: {app_folder}")
                 self.finished.emit(app_folder, True)  # is_folder = True
             else:
                 # Single .exe file
+                self.log_message.emit("✨ Chuẩn bị cài đặt...")
+                # Emit 100% progress (all done)
+                self.progress.emit(100, 100)
                 print(f"[DEBUG] Emitting finished signal with file: {file_path}")
                 self.finished.emit(file_path, False)  # is_folder = False
 

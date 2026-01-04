@@ -14,6 +14,195 @@ from ui.styles import COLORS
 from updater import Updater, DownloadWorker
 
 
+class ConfirmDialog(QDialog):
+    """Dialog for confirmation with clear, readable UI."""
+
+    def __init__(self, title: str, message: str, ok_text: str = "OK", cancel_text: str = "Hủy", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.setMinimumSize(450, 200)
+        self.user_confirmed = False
+        self.setup_ui(message, ok_text, cancel_text)
+
+    def setup_ui(self, message: str, ok_text: str, cancel_text: str):
+        """Setup UI."""
+        self.setStyleSheet(f"QDialog {{ background-color: {COLORS['bg_dark']}; }}")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(20)
+
+        # Icon and message
+        msg_layout = QHBoxLayout()
+
+        # Question icon
+        icon_label = QLabel("❓")
+        icon_label.setStyleSheet("font-size: 48px;")
+        msg_layout.addWidget(icon_label)
+
+        # Message text
+        msg_label = QLabel(message)
+        msg_label.setWordWrap(True)
+        msg_label.setStyleSheet(f"""
+            color: {COLORS['text_primary']};
+            font-size: 15px;
+            font-weight: 500;
+            padding-left: 12px;
+            line-height: 1.5;
+        """)
+        msg_layout.addWidget(msg_label, 1)
+
+        layout.addLayout(msg_layout)
+
+        layout.addStretch()
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        # Cancel button
+        cancel_btn = QPushButton(cancel_text)
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['bg_lighter']};
+                color: {COLORS['text_primary']};
+                border: none;
+                border-radius: 6px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: 500;
+                min-width: 100px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['border_light']};
+            }}
+        """)
+        cancel_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(cancel_btn)
+
+        # OK button
+        ok_btn = QPushButton(ok_text)
+        ok_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['accent']};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: 500;
+                min-width: 100px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['accent_hover']};
+            }}
+        """)
+        ok_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        ok_btn.clicked.connect(self.on_confirm)
+        ok_btn.setDefault(True)  # Enter key triggers this
+        btn_layout.addWidget(ok_btn)
+
+        layout.addLayout(btn_layout)
+
+    def on_confirm(self):
+        """User confirmed."""
+        self.user_confirmed = True
+        self.accept()
+
+
+class ErrorDialog(QDialog):
+    """Dialog for showing error messages in a readable format."""
+
+    def __init__(self, title: str, message: str, details: str = "", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.setMinimumSize(500, 300)
+        self.setup_ui(message, details)
+
+    def setup_ui(self, message: str, details: str):
+        """Setup UI."""
+        self.setStyleSheet(f"QDialog {{ background-color: {COLORS['bg_dark']}; }}")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # Icon and message
+        msg_layout = QHBoxLayout()
+
+        # Error icon
+        icon_label = QLabel("⚠️")
+        icon_label.setStyleSheet("font-size: 32px;")
+        msg_layout.addWidget(icon_label)
+
+        # Message text
+        msg_label = QLabel(message)
+        msg_label.setWordWrap(True)
+        msg_label.setStyleSheet(f"""
+            color: {COLORS['text_primary']};
+            font-size: 14px;
+            padding-left: 8px;
+        """)
+        msg_layout.addWidget(msg_label, 1)
+
+        layout.addLayout(msg_layout)
+
+        # Details (if provided)
+        if details:
+            details_label = QLabel("Chi tiết lỗi:")
+            details_label.setStyleSheet(f"""
+                color: {COLORS['text_secondary']};
+                font-weight: 600;
+                font-size: 13px;
+                margin-top: 8px;
+            """)
+            layout.addWidget(details_label)
+
+            details_text = QTextEdit()
+            details_text.setReadOnly(True)
+            details_text.setPlainText(details)
+            details_text.setStyleSheet(f"""
+                QTextEdit {{
+                    background-color: {COLORS['bg_light']};
+                    border: 1px solid {COLORS['border']};
+                    border-radius: 8px;
+                    padding: 12px;
+                    color: {COLORS['text_primary']};
+                    font-size: 12px;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                }}
+            """)
+            layout.addWidget(details_text, 1)
+
+        # OK button
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        ok_btn = QPushButton("OK")
+        ok_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['accent']};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 24px;
+                font-weight: 500;
+                min-width: 80px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['accent_hover']};
+            }}
+        """)
+        ok_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        ok_btn.clicked.connect(self.accept)
+        btn_layout.addWidget(ok_btn)
+
+        layout.addLayout(btn_layout)
+
+
 class UpdateDialog(QDialog):
     """Dialog showing update information."""
 
@@ -71,8 +260,29 @@ class UpdateDialog(QDialog):
         """)
         layout.addWidget(self.changelog, 1)
 
+        # Log window (hidden initially, shown during download)
+        self.log_window = QTextEdit()
+        self.log_window.setReadOnly(True)
+        self.log_window.setStyleSheet(f"""
+            QTextEdit {{
+                background-color: {COLORS['bg_light']};
+                border: 1px solid {COLORS['border']};
+                border-radius: 8px;
+                padding: 12px;
+                color: {COLORS['text_primary']};
+                font-size: 13px;
+                font-family: 'Consolas', 'Courier New', monospace;
+            }}
+        """)
+        self.log_window.setVisible(False)
+        layout.addWidget(self.log_window, 1)
+
         # Progress bar (hidden initially)
         self.progress_bar = QProgressBar()
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)  # Show percentage text
         self.progress_bar.setStyleSheet(f"""
             QProgressBar {{
                 border: none;
@@ -148,6 +358,12 @@ class UpdateDialog(QDialog):
             print("[DEBUG UpdateDialog] start_download() called")
             self.download_btn.setEnabled(False)
             self.cancel_btn.setText("Đóng")
+
+            # Hide changelog, show log window
+            self.changelog.setVisible(False)
+            self.log_window.setVisible(True)
+            self.log_window.clear()
+
             self.progress_bar.setVisible(True)
             self.status_label.setVisible(True)
             self.status_label.setText("Đang tải xuống...")
@@ -166,6 +382,7 @@ class UpdateDialog(QDialog):
             self.download_worker.progress.connect(self.on_download_progress)
             self.download_worker.finished.connect(self.on_download_finished)
             self.download_worker.error.connect(self.on_download_error)
+            self.download_worker.log_message.connect(self.on_log_message)
 
             print("[DEBUG UpdateDialog] Starting worker thread...")
             self.download_worker.start()
@@ -173,14 +390,18 @@ class UpdateDialog(QDialog):
 
         except Exception as e:
             import traceback
+            error_details = traceback.format_exc()
             print(f"[ERROR UpdateDialog] Exception in start_download():")
-            print(traceback.format_exc())
+            print(error_details)
 
-            QMessageBox.critical(
-                self,
-                "Lỗi nghiêm trọng",
-                f"Không thể bắt đầu tải xuống:\n{str(e)}\n\nVui lòng kiểm tra console để xem chi tiết."
+            # Show error with custom dialog
+            error_dialog = ErrorDialog(
+                title="Lỗi nghiêm trọng",
+                message="Không thể bắt đầu tải xuống. Vui lòng thử lại.",
+                details=error_details,
+                parent=self
             )
+            error_dialog.exec()
 
             # Re-enable button
             self.download_btn.setEnabled(True)
@@ -190,14 +411,26 @@ class UpdateDialog(QDialog):
 
     def on_download_progress(self, downloaded: int, total: int):
         """Update progress bar."""
+        print(f"[DEBUG] on_download_progress called: {downloaded}/{total}")
         if total > 0:
             percentage = int((downloaded / total) * 100)
+            print(f"[DEBUG] Setting progress bar to {percentage}%")
             self.progress_bar.setValue(percentage)
 
-            # Update status
-            downloaded_mb = downloaded / (1024 * 1024)
-            total_mb = total / (1024 * 1024)
-            self.status_label.setText(f"Đang tải: {downloaded_mb:.1f} / {total_mb:.1f} MB")
+            # Update status label based on progress stage
+            if percentage < 87:
+                status_text = "Đang tải xuống từ Google Drive..."
+            elif percentage < 88:
+                status_text = "Hoàn tất tải xuống..."
+            elif percentage < 96:
+                status_text = "Đang giải nén file..."
+            elif percentage < 100:
+                status_text = "Hoàn tất giải nén..."
+            else:
+                status_text = "Chuẩn bị cài đặt..."
+
+            self.status_label.setText(status_text)
+            print(f"[DEBUG] Status label: {status_text}")
 
     def on_download_finished(self, path: str, is_folder: bool):
         """Handle download completion."""
@@ -211,20 +444,26 @@ class UpdateDialog(QDialog):
             self.status_label.setText("Tải xuống hoàn tất!")
             self.progress_bar.setValue(100)
 
-            # Show confirmation
-            reply = QMessageBox.question(
-                self,
-                "Cài đặt cập nhật",
-                "Đã tải xong! Nhấn OK để cài đặt và khởi động lại ứng dụng.\n\n"
-                "Lưu ý: Ứng dụng sẽ yêu cầu quyền Administrator để thay thế file.",
-                QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel
-            )
+            self.append_log("🎉 Hoàn tất! Sẵn sàng cài đặt.")
 
-            if reply == QMessageBox.StandardButton.Ok:
+            # Show confirmation with custom dialog
+            confirm_dialog = ConfirmDialog(
+                title="Cài đặt cập nhật",
+                message="Đã tải xong! Nhấn OK để cài đặt và khởi động lại ứng dụng.\n\n"
+                        "Lưu ý: Ứng dụng sẽ yêu cầu quyền Administrator để thay thế file.",
+                ok_text="Cài đặt",
+                cancel_text="Hủy",
+                parent=self
+            )
+            confirm_dialog.exec()
+
+            if confirm_dialog.user_confirmed:
                 print("[DEBUG UpdateDialog] User clicked OK, installing update...")
+                self.append_log("🔧 Bắt đầu cài đặt...")
                 self.install_update()
             else:
                 print("[DEBUG UpdateDialog] User cancelled installation")
+                self.append_log("⏸️ Người dùng hủy cài đặt.")
 
         except Exception as e:
             import traceback
@@ -236,20 +475,38 @@ class UpdateDialog(QDialog):
         print(f"[DEBUG UpdateDialog] on_download_error called: {error_msg}")
 
         try:
-            self.status_label.setText(f"Lỗi: {error_msg}")
+            self.status_label.setText("Lỗi tải xuống")
             self.download_btn.setEnabled(True)
             self.download_btn.setText("Thử lại")
 
-            QMessageBox.warning(
-                self,
-                "Lỗi tải xuống",
-                f"Không thể tải xuống cập nhật:\n{error_msg}\n\n"
-                "Vui lòng kiểm tra kết nối internet và thử lại."
+            # Add error to log window
+            self.append_log(f"❌ Lỗi: {error_msg[:100]}...")
+
+            # Show error in a readable dialog
+            error_dialog = ErrorDialog(
+                title="Lỗi tải xuống",
+                message="Không thể tải xuống cập nhật. Vui lòng kiểm tra kết nối internet và thử lại.",
+                details=error_msg,
+                parent=self
             )
+            error_dialog.exec()
         except Exception as e:
             import traceback
             print(f"[ERROR UpdateDialog] Exception in on_download_error:")
             print(traceback.format_exc())
+
+    def on_log_message(self, message: str):
+        """Handle log message from download worker."""
+        self.append_log(message)
+
+    def append_log(self, message: str):
+        """Append message to log window with timestamp."""
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.log_window.append(f"[{timestamp}] {message}")
+        # Auto-scroll to bottom
+        scrollbar = self.log_window.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
     def install_update(self):
         """Install the downloaded update."""
@@ -277,22 +534,33 @@ class UpdateDialog(QDialog):
                 QApplication.instance().quit()
             else:
                 print("[DEBUG UpdateDialog] Installation failed (success=False)")
-                QMessageBox.warning(
-                    self,
-                    "Lỗi cài đặt",
-                    "Không thể cài đặt cập nhật. Vui lòng cài đặt thủ công."
+                # Show error with custom dialog
+                error_dialog = ErrorDialog(
+                    title="Lỗi cài đặt",
+                    message="Không thể cài đặt cập nhật. Vui lòng cài đặt thủ công.",
+                    details="Updater.request_admin_and_install() returned False.\n"
+                            "Có thể do:\n"
+                            "- Không có quyền Administrator\n"
+                            "- File đang được sử dụng\n"
+                            "- Đường dẫn không hợp lệ",
+                    parent=self
                 )
+                error_dialog.exec()
 
         except Exception as e:
             import traceback
+            error_details = traceback.format_exc()
             print(f"[ERROR UpdateDialog] Exception in install_update():")
-            print(traceback.format_exc())
+            print(error_details)
 
-            QMessageBox.critical(
-                self,
-                "Lỗi",
-                f"Lỗi khi cài đặt: {str(e)}"
+            # Show error with custom dialog
+            error_dialog = ErrorDialog(
+                title="Lỗi cài đặt",
+                message="Lỗi khi cài đặt cập nhật. Vui lòng thử lại.",
+                details=error_details,
+                parent=self
             )
+            error_dialog.exec()
 
     def on_cancel(self):
         """Handle cancel button."""

@@ -37,7 +37,9 @@
       "Bash(timeout:*)",
       "Bash(.venvScriptspython.exe -c \"import time; print\\(''Waiting 45 seconds...''\\); time.sleep\\(45\\); print\\(''Done waiting''\\)\")",
       "Bash(start \"AnhMinAudio\" \"dist\\\\AnhMinAudio\\\\AnhMinAudio.exe\")",
-      "Bash(.venv/Scripts/pip.exe:*)"
+      "Bash(.venv/Scripts/pip.exe:*)",
+      "Bash(.venvScriptspython.exe test_update_ui.py)",
+      "Bash(python test_update_ui.py:*)"
     ]
   }
 }
